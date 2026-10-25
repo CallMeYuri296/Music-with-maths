@@ -1,0 +1,2495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Draw Music With Maths - Exhibition Installation</title>
+  <style>
+    /* ==========================================================================
+       EXHIBITION STYLING & BABY PINK THEME
+       Deep dark background (#0d1117) with glowing baby pink (#ffb6c1) accents.
+       ========================================================================== */
+    :root {
+      --bg-dark: #0d1117;
+      --card-bg: #161b22;
+      --card-border: #30363d;
+      --card-highlight: #21262d;
+      --pink-primary: #ffb6c1;      /* Baby pink */
+      --pink-glow: #f48fb1;         /* Vibrant pink accent */
+      --pink-dim: rgba(255, 182, 193, 0.12);
+      --pink-border: rgba(255, 182, 193, 0.3);
+      --pink-shadow: rgba(255, 182, 193, 0.35);
+      --text-main: #f0f6fc;
+      --text-muted: #8b949e;
+      --accent-green: #7ee787;
+      --accent-cyan: #79c0ff;
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-family);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 60px;
+      line-height: 1.5;
+    }
+
+    /* Process Flow Banner */
+    .process-banner {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 22px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 999px;
+      font-size: 0.82rem;
+      letter-spacing: 1.5px;
+      font-weight: 600;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+    }
+
+    .process-step {
+      color: var(--pink-primary);
+      text-shadow: 0 0 10px var(--pink-glow);
+      font-weight: 700;
+    }
+
+    .process-arrow {
+      color: var(--pink-border);
+    }
+
+    /* Header Section */
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+      max-width: 760px;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      letter-spacing: 2px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--text-main);
+      text-shadow: 0 0 20px var(--pink-shadow);
+      margin-bottom: 8px;
+    }
+
+    h1 span {
+      color: var(--pink-primary);
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 1rem;
+      font-weight: 400;
+    }
+
+    .live-installation-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+      padding: 5px 16px;
+      background: var(--pink-dim);
+      border: 1px solid var(--pink-primary);
+      color: var(--pink-primary);
+      border-radius: 20px;
+      font-size: 0.75rem;
+      letter-spacing: 1.2px;
+      font-weight: 700;
+      text-transform: uppercase;
+      box-shadow: 0 0 12px var(--pink-dim);
+    }
+
+    .live-pulse-dot {
+      width: 8px;
+      height: 8px;
+      background-color: var(--accent-green);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--accent-green);
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    /* Main Exhibition Container */
+    .exhibition-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 740px;
+      gap: 18px;
+    }
+
+    /* Canvas Card Wrapper */
+    .canvas-wrapper {
+      position: relative;
+      width: 100%;
+      background: #090d13;
+      border: 2px solid var(--card-border);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(255, 182, 193, 0.08);
+      transition: border-color 0.3s ease;
+    }
+
+    .canvas-wrapper:hover {
+      border-color: rgba(255, 182, 193, 0.45);
+    }
+
+    /* The Interactive Drawing Canvas */
+    #drawingCanvas {
+      display: block;
+      width: 100%;
+      height: 400px;
+      touch-action: none;
+      cursor: crosshair;
+    }
+
+    /* Real-Time Cursor Coordinate Tracker */
+    .coordinate-hud {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      padding: 8px 16px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-top: none;
+      border-radius: 0 0 14px 14px;
+      font-size: 0.82rem;
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+      color: var(--text-muted);
+      margin-top: -18px;
+    }
+
+    .coord-value {
+      color: var(--pink-primary);
+      font-weight: 700;
+      text-shadow: 0 0 8px var(--pink-shadow);
+    }
+
+    /* ==========================================================================
+       PLAYBACK & RHYTHM CONTROLS PANEL
+       ========================================================================== */
+    .playback-bar {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      padding: 16px 20px;
+      background: #141b24;
+      border: 1px solid var(--pink-border);
+      border-radius: 14px;
+      box-shadow: 0 6px 20px rgba(255, 182, 193, 0.08);
+    }
+
+    .playback-top-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .playback-buttons {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .play-btn {
+      background: var(--pink-primary) !important;
+      color: #0d1117 !important;
+      font-weight: 700 !important;
+      box-shadow: 0 0 12px var(--pink-shadow) !important;
+    }
+
+    .play-btn:hover:not(:disabled) {
+      background: #ffc4cf !important;
+      box-shadow: 0 0 20px var(--pink-glow) !important;
+      transform: translateY(-1px);
+    }
+
+    .playback-status-pill {
+      font-family: ui-monospace, SFMono-Regular, monospace;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: #21262d;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+
+    .status-badge.playing {
+      background: rgba(126, 231, 135, 0.2);
+      color: var(--accent-green);
+      border: 1px solid var(--accent-green);
+    }
+
+    /* Rhythm Strip */
+    .rhythm-strip {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 0.84rem;
+    }
+
+    .rhythm-controls-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .rhythm-label {
+      color: var(--pink-primary);
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      font-size: 0.76rem;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .rhythm-select {
+      background: #0d1117;
+      border: 1px solid var(--pink-border);
+      color: var(--text-main);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-family: inherit;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .toggle-pill {
+      background: #21262d;
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .toggle-pill.active {
+      background: var(--pink-dim);
+      border-color: var(--pink-primary);
+      color: var(--pink-primary);
+      box-shadow: 0 0 10px var(--pink-dim);
+    }
+
+    .audio-indicator-pill {
+      font-family: ui-monospace, SFMono-Regular, monospace;
+      font-size: 0.75rem;
+      color: var(--accent-green);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* LIVE AUDIO HUD & WAVEFORM OSCILLOSCOPE */
+    .audio-hud-panel {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: center;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 16px 20px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .audio-stats-cluster {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .audio-stat-block {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .audio-stat-label {
+      font-size: 0.7rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .audio-stat-val {
+      font-family: ui-monospace, SFMono-Regular, monospace;
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--pink-primary);
+      text-shadow: 0 0 10px var(--pink-shadow);
+    }
+
+    .waveform-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+
+    .waveform-label {
+      font-size: 0.68rem;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    #waveformCanvas {
+      background: #090d13;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      display: block;
+    }
+
+    /* Controls & Status Dashboard */
+    .dashboard {
+      width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 22px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .buttons-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* Baby Pink Exhibition Buttons */
+    .btn {
+      background: transparent;
+      border: 1px solid var(--pink-primary);
+      color: var(--pink-primary);
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .btn:hover:not(:disabled) {
+      background: var(--pink-primary);
+      color: #0d1117;
+      box-shadow: 0 0 16px var(--pink-shadow);
+      transform: translateY(-1px);
+    }
+
+    .btn:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+
+    .btn:disabled {
+      border-color: #30363d;
+      color: #586069;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .status-counters {
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+
+    .status-counters .highlight {
+      color: var(--pink-primary);
+      font-weight: 700;
+    }
+
+    /* MATHEMATICS HUD & METRIC CARDS */
+    .math-hud-section {
+      width: 100%;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.92rem;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--pink-primary);
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .live-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      color: var(--accent-green);
+      letter-spacing: 1px;
+    }
+
+    .live-dot {
+      width: 7px;
+      height: 7px;
+      background-color: var(--accent-green);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--accent-green);
+      animation: pulse 1.8s infinite;
+    }
+
+    /* 5-Card Metrics Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .metric-card {
+      background: #0f141c;
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 12px 10px;
+      text-align: center;
+      transition: all 0.25s ease;
+    }
+
+    .metric-card:hover {
+      border-color: var(--pink-border);
+      box-shadow: 0 0 14px var(--pink-dim);
+      transform: translateY(-2px);
+    }
+
+    .metric-label {
+      font-size: 0.72rem;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    .metric-value {
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--pink-primary);
+      text-shadow: 0 0 10px var(--pink-shadow);
+      min-height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .metric-unit {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-left: 3px;
+      font-weight: 400;
+    }
+
+    /* Mathematical Formulas Breakdown Box */
+    .formulas-box {
+      background: #0b0f15;
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 16px;
+    }
+
+    .formulas-box h3 {
+      font-size: 0.8rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-main);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .formula-items {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .formula-item {
+      background: #141922;
+      border-left: 3px solid var(--pink-primary);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 0.8rem;
+    }
+
+    .formula-math {
+      font-family: ui-monospace, SFMono-Regular, monospace;
+      color: var(--pink-primary);
+      font-weight: 700;
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    .formula-desc {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      line-height: 1.4;
+    }
+
+    /* EDUCATIONAL ACCORDION ("HOW DOES IT WORK?") */
+    .accordion-section {
+      width: 100%;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .accordion-header-main {
+      padding: 18px 22px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--pink-primary);
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .accordion-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .accordion-item {
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .accordion-item:last-child {
+      border-bottom: none;
+    }
+
+    .accordion-trigger {
+      width: 100%;
+      padding: 14px 22px;
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      font-family: var(--font-family);
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    .accordion-trigger:hover {
+      background: rgba(255, 182, 193, 0.05);
+      color: var(--pink-primary);
+    }
+
+    .accordion-icon {
+      font-size: 1.1rem;
+      color: var(--pink-primary);
+      font-family: ui-monospace, monospace;
+      transition: transform 0.25s ease;
+    }
+
+    .accordion-item.open .accordion-icon {
+      transform: rotate(45deg);
+    }
+
+    .accordion-content {
+      max-height: 0;
+      overflow: hidden;
+      padding: 0 22px;
+      transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), padding 0.35s ease;
+      background: #0f141c;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .accordion-item.open .accordion-content {
+      max-height: 220px;
+      padding: 12px 22px 18px;
+    }
+
+    .accordion-content strong {
+      color: var(--text-main);
+    }
+
+    .accordion-content code {
+      background: #1f242c;
+      color: var(--pink-primary);
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-family: ui-monospace, monospace;
+    }
+
+    /* RESULT CARD POPUP MODAL ("YOUR MATHEMATICAL COMPOSITION") */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.82);
+      backdrop-filter: blur(8px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      z-index: 9999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .result-card {
+      width: 100%;
+      max-width: 520px;
+      background: #141b24;
+      border: 2px solid var(--pink-primary);
+      border-radius: 20px;
+      padding: 30px 28px;
+      box-shadow: 0 0 40px rgba(255, 182, 193, 0.35), 0 20px 40px rgba(0, 0, 0, 0.8);
+      position: relative;
+      transform: scale(0.92) translateY(20px);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      text-align: center;
+    }
+
+    .modal-overlay.active .result-card {
+      transform: scale(1) translateY(0);
+    }
+
+    .modal-close-btn {
+      position: absolute;
+      top: 16px;
+      right: 18px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.5rem;
+      cursor: pointer;
+      line-height: 1;
+      transition: color 0.2s ease;
+    }
+
+    .modal-close-btn:hover {
+      color: var(--pink-primary);
+    }
+
+    .result-badge {
+      display: inline-block;
+      padding: 4px 14px;
+      background: var(--pink-dim);
+      border: 1px solid var(--pink-primary);
+      color: var(--pink-primary);
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .result-title {
+      font-size: 1.6rem;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-main);
+      text-shadow: 0 0 16px var(--pink-shadow);
+      margin-bottom: 6px;
+    }
+
+    .result-title span {
+      color: var(--pink-primary);
+    }
+
+    .result-subtitle {
+      font-size: 0.95rem;
+      color: var(--accent-cyan);
+      font-weight: 600;
+      margin-bottom: 24px;
+    }
+
+    .result-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+      text-align: left;
+    }
+
+    .result-stat-box {
+      background: #0b0f15;
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+
+    .result-stat-label {
+      font-size: 0.7rem;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+
+    .result-stat-value {
+      font-family: ui-monospace, SFMono-Regular, monospace;
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--pink-primary);
+    }
+
+    .result-actions {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .exhibition-tip {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    .exhibition-tip kbd {
+      background: #21262d;
+      border: 1px solid #30363d;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--pink-primary);
+      font-family: inherit;
+    }
+
+    @media (max-width: 640px) {
+      h1 { font-size: 1.6rem; }
+      #drawingCanvas { height: 320px; }
+      .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+      .formula-items { grid-template-columns: 1fr; }
+      .audio-hud-panel { grid-template-columns: 1fr; }
+      .waveform-wrapper { align-items: stretch; }
+      #waveformCanvas { width: 100%; }
+      .dashboard { flex-direction: column; align-items: stretch; }
+      .buttons-group { justify-content: center; }
+      .status-counters { text-align: center; }
+      .result-stats-grid { grid-template-columns: 1fr; }
+      .rhythm-strip { flex-direction: column; align-items: stretch; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Exhibition 5-Step Process Banner -->
+  <div class="process-banner" aria-label="Exhibition Process Flow">
+    <span class="process-step">01 DRAW</span>
+    <span class="process-arrow">→</span>
+    <span class="process-step">02 MEASURE</span>
+    <span class="process-arrow">→</span>
+    <span class="process-step">03 CALCULATE</span>
+    <span class="process-arrow">→</span>
+    <span class="process-step">04 CONVERT</span>
+    <span class="process-arrow">→</span>
+    <span class="process-step">05 PERFORM</span>
+  </div>
+
+  <!-- Header Title & Subtitle -->
+  <header>
+    <h1>Draw <span>Music</span> With Maths</h1>
+    <p class="subtitle">"Every line has mathematics. Every mathematical pattern can become music."</p>
+    <div class="live-installation-badge">
+      <span class="live-pulse-dot"></span>
+      Interactive Exhibition Installation &bull; Live Engine
+    </div>
+  </header>
+
+  <!-- Interactive Exhibition Canvas Container -->
+  <main class="exhibition-container">
+    <div class="canvas-wrapper">
+      <canvas id="drawingCanvas" width="600" height="400" aria-label="Cartesian Drawing Canvas"></canvas>
+    </div>
+
+    <!-- Live Cursor Coordinate HUD -->
+    <div class="coordinate-hud">
+      <span>CARTESIAN PLANE (600 &times; 400)</span>
+      <span id="cursorPosTracker">Cursor: <span class="coord-value">X: --, Y: --</span></span>
+    </div>
+
+    <!-- PLAYBACK & RHYTHM CONTROLS PANEL -->
+    <section class="playback-bar" aria-label="Audio Playback and Rhythm Controls">
+      <div class="playback-top-row">
+        <div class="playback-buttons">
+          <button id="playBtn" class="btn play-btn" title="Play your drawing as musical composition">
+            &#9654; PLAY COMPOSITION
+          </button>
+          <button id="pauseBtn" class="btn" title="Pause playback" disabled>
+            &#10074;&#10074; PAUSE
+          </button>
+          <button id="stopBtn" class="btn" title="Stop and reset playback" disabled>
+            &#9632; STOP
+          </button>
+          <button id="scoreCardBtn" class="btn" title="View your mathematical composition scorecard" disabled>
+            &#9733; SCORE CARD
+          </button>
+          <button id="soundTestBtn" class="btn" title="Click to test headphone audio output">
+            &#128266; TEST AUDIO
+          </button>
+        </div>
+
+        <div class="playback-status-pill">
+          Status: <span id="playbackStatusBadge" class="status-badge">READY</span>
+          <span>| Point: <span id="playbackPointTracker" class="highlight">0/0</span></span>
+        </div>
+      </div>
+
+      <!-- Rhythm Controls -->
+      <div class="rhythm-strip">
+        <div class="rhythm-controls-group">
+          <span class="rhythm-label">&#129345; Rhythm Beats</span>
+          <button id="beatToggleBtn" class="toggle-pill active" title="Toggle drum beats on/off">
+            <span>&#9679;</span> Beats: ON
+          </button>
+
+          <select id="rhythmStyleSelect" class="rhythm-select" title="Choose drum beat style">
+            <option value="electro">⚡ Electro Pop (Driving Kick &amp; Hats)</option>
+            <option value="lofi">☕ Chill Lo-Fi (Warm Groove)</option>
+            <option value="cosmic">🌌 Cosmic Ambient (Deep Pulse)</option>
+            <option value="minimal">🎹 Pure Acoustic (Melody Only)</option>
+          </select>
+        </div>
+
+        <div class="audio-indicator-pill">
+          <span class="live-dot"></span>
+          <span id="audioEngineStatus">Headphones: Direct Output Connected</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- LIVE AUDIO HUD & WAVEFORM OSCILLOSCOPE -->
+    <section class="audio-hud-panel" aria-label="Live Audio Frequency and Waveform">
+      <div class="audio-stats-cluster">
+        <div class="audio-stat-block">
+          <span class="audio-stat-label">Current Note</span>
+          <span class="audio-stat-val" id="audioNoteVal">--</span>
+        </div>
+        <div class="audio-stat-block">
+          <span class="audio-stat-label">Frequency (Hz)</span>
+          <span class="audio-stat-val" id="audioFreqVal">--</span>
+        </div>
+        <div class="audio-stat-block">
+          <span class="audio-stat-label">Musical Scale</span>
+          <span class="audio-stat-val" style="font-size: 1rem; color: var(--accent-cyan);">Pentatonic (C3-C6)</span>
+        </div>
+      </div>
+
+      <!-- Live Oscilloscope Waveform Display -->
+      <div class="waveform-wrapper">
+        <span class="waveform-label">Pink Waveform Monitor</span>
+        <canvas id="waveformCanvas" width="220" height="48"></canvas>
+      </div>
+    </section>
+
+    <!-- LIVE MATHEMATICS HUD -->
+    <section class="math-hud-section" aria-label="Real-time geometric measurements">
+      <div class="section-title">
+        <span>The Mathematics Behind Your Music</span>
+        <span class="live-indicator"><span class="live-dot"></span> LIVE ENGINE</span>
+      </div>
+
+      <!-- 5 Metric Cards -->
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">Points Tracked</div>
+          <div class="metric-value" id="hudPoints">0</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Total Distance</div>
+          <div class="metric-value">
+            <span id="hudDistance">0</span><span class="metric-unit">px</span>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Average Slope</div>
+          <div class="metric-value" id="hudSlope">0.00</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Average Angle</div>
+          <div class="metric-value">
+            <span id="hudAngle">0.0</span><span class="metric-unit">&deg;</span>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Est. Symmetry</div>
+          <div class="metric-value">
+            <span id="hudSymmetry">--</span><span class="metric-unit">%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Explanatory Formulas Box for School Visitors -->
+      <div class="formulas-box">
+        <h3>&#8721; Exhibition Geometric Formulas &amp; Sound Mapping</h3>
+        <div class="formula-items">
+          <div class="formula-item">
+            <span class="formula-math">X &rarr; Pitch | Y &rarr; Tempo</span>
+            <span class="formula-desc">Horizontal position controls pentatonic pitch (Left = low notes, Right = high notes); vertical position sets rhythm speed.</span>
+          </div>
+          <div class="formula-item">
+            <span class="formula-math">d = &radic;(&Delta;x&sup2; + &Delta;y&sup2;) &rarr; Duration</span>
+            <span class="formula-desc">Segment Euclidean distance controls note sustain and acoustic sound volume.</span>
+          </div>
+          <div class="formula-item">
+            <span class="formula-math">m = &Delta;y / &Delta;x &rarr; Timbre</span>
+            <span class="formula-desc">Stroke slope &amp; angle adjust the harmonic lowpass filter cutoff, altering timbre brightness.</span>
+          </div>
+          <div class="formula-item">
+            <span class="formula-math">Direct Web Audio Synthesis</span>
+            <span class="formula-desc">Each sampled coordinate triggers precise analog oscillators piped directly to your headphones.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Controls & Status Dashboard -->
+    <section class="dashboard" aria-label="Canvas controls and stats">
+      <div class="buttons-group">
+        <button id="undoBtn" class="btn" title="Undo the last stroke" disabled>
+          &#8630; Undo
+        </button>
+        <button id="redoBtn" class="btn" title="Redo the last undone stroke" disabled>
+          &#8631; Redo
+        </button>
+        <button id="clearBtn" class="btn" title="Clear all strokes" disabled>
+          &times; Clear Canvas
+        </button>
+      </div>
+
+      <div class="status-counters" id="statsDisplay">
+        Strokes: <span id="strokeCount" class="highlight">0</span> &nbsp;|&nbsp; 
+        Points: <span id="pointCount" class="highlight">0</span>
+      </div>
+    </section>
+
+    <!-- EDUCATIONAL ACCORDION ("HOW DOES IT WORK?") -->
+    <section class="accordion-section" aria-label="Educational Guide">
+      <div class="accordion-header-main">
+        &#127891; How Does It Work? (Exhibition Walkthrough)
+      </div>
+
+      <div class="accordion-list">
+        <div class="accordion-item">
+          <button class="accordion-trigger" aria-expanded="false">
+            <span>01 DRAW: The Cartesian Plane &amp; Digital Trajectories</span>
+            <span class="accordion-icon">+</span>
+          </button>
+          <div class="accordion-content">
+            When you draw on the interactive canvas, the system tracks continuous movement inside a 2D Cartesian grid measuring <code>600 &times; 400</code> pixels. The horizontal axis represents <strong>X</strong>, and the vertical axis represents <strong>Y</strong> with the center origin marked at <code>(300, 200)</code>.
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <button class="accordion-trigger" aria-expanded="false">
+            <span>02 MEASURE: High-Frequency Coordinate Sampling</span>
+            <span class="accordion-icon">+</span>
+          </button>
+          <div class="accordion-content">
+            Every movement of your mouse or finger is sampled at up to 60 times per second into discrete mathematical coordinates: <code>(x₁, y₁), (x₂, y₂), (x₃, y₃)...</code>. Jitter filtering removes micro-movements so each point represents an intentional musical landmark.
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <button class="accordion-trigger" aria-expanded="false">
+            <span>03 CALCULATE: Geometry, Trigonometry &amp; Symmetry</span>
+            <span class="accordion-icon">+</span>
+          </button>
+          <div class="accordion-content">
+            The math engine computes:
+            <ul>
+              <li><strong>Euclidean Distance</strong>: <code>d = √((x₂ - x₁)² + (y₂ - y₁)²)</code> for segment path length.</li>
+              <li><strong>Zero-Division Safe Slope</strong>: <code>m = (y₂ - y₁) / (x₂ - x₁)</code> measuring line steepness.</li>
+              <li><strong>Direction Angle</strong>: <code>θ = atan2(Δy, Δx)</code> capturing line curvature.</li>
+              <li><strong>Bilateral Symmetry</strong>: Compares the reflection distance error across the vertical center axis <code>X = 300</code>.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <button class="accordion-trigger" aria-expanded="false">
+            <span>04 CONVERT: Spatial Mathematics into Musical Theory</span>
+            <span class="accordion-icon">+</span>
+          </button>
+          <div class="accordion-content">
+            Geometry is mapped into the <strong>C Major Pentatonic Scale</strong> (C, D, E, G, A). Pentatonic scales contain no harsh dissonant intervals, ensuring that <em>any shape you draw naturally harmonizes</em>. X-position chooses pitch, Y-position controls tempo, distance controls note duration, and slope modulates instrument timbre.
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <button class="accordion-trigger" aria-expanded="false">
+            <span>05 PERFORM: Real-Time Web Audio Synthesis &amp; Rhythms</span>
+            <span class="accordion-icon">+</span>
+          </button>
+          <div class="accordion-content">
+            The browser's Web Audio API generates a clean analog synthesizer and rhythm engine. Sine and triangle oscillators connect directly through gain stages into your headphones, with live pink oscilloscope monitoring.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <p class="exhibition-tip">
+      <kbd>Spacebar</kbd>: Play / Pause &nbsp;|&nbsp; 
+      <kbd>Esc</kbd>: Stop / Close &nbsp;|&nbsp; 
+      <kbd>Ctrl+Z</kbd>: Undo &nbsp;|&nbsp; 
+      <kbd>C</kbd>: Clear
+    </p>
+  </main>
+
+  <!-- RESULT CARD MODAL ("YOUR MATHEMATICAL COMPOSITION") -->
+  <div class="modal-overlay" id="resultModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="result-card">
+      <button class="modal-close-btn" id="modalCloseBtn" aria-label="Close Scorecard">&times;</button>
+      
+      <div class="result-badge">&#10024; Performance Complete</div>
+      <h2 class="result-title" id="modalTitle">Your <span>Math</span> Score</h2>
+      <div class="result-subtitle" id="compositionCategory">"Harmonic Curvilinear Melody"</div>
+
+      <div class="result-stats-grid">
+        <div class="result-stat-box">
+          <div class="result-stat-label">Total Notes Played</div>
+          <div class="result-stat-value" id="cardNotes">0</div>
+        </div>
+        <div class="result-stat-box">
+          <div class="result-stat-label">Pixels Travelled</div>
+          <div class="result-stat-value"><span id="cardDistance">0</span> px</div>
+        </div>
+        <div class="result-stat-box">
+          <div class="result-stat-label">Average Slope</div>
+          <div class="result-stat-value" id="cardSlope">0.00</div>
+        </div>
+        <div class="result-stat-box">
+          <div class="result-stat-label">Average Angle</div>
+          <div class="result-stat-value"><span id="cardAngle">0.0</span>&deg;</div>
+        </div>
+      </div>
+
+      <div class="result-stat-box" style="margin-bottom: 24px;">
+        <div class="result-stat-label">Bilateral Symmetry Index</div>
+        <div class="result-stat-value" style="color: var(--accent-green);"><span id="cardSymmetry">--</span>%</div>
+      </div>
+
+      <div class="result-actions">
+        <button id="modalReplayBtn" class="btn play-btn">&#9654; Replay Composition</button>
+        <button id="modalNewBtn" class="btn">&#9998; Draw New Pattern</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       BULLETPROOF WEB AUDIO SYNTHESIZER & DIRECT HEADPHONE ROUTING ENGINE
+       ========================================================================== */
+
+    // 1. SELECT DOM ELEMENTS
+    const canvas = document.getElementById('drawingCanvas');
+    const ctx = canvas.getContext('2d');
+    const cursorPosTracker = document.getElementById('cursorPosTracker');
+    const strokeCountEl = document.getElementById('strokeCount');
+    const pointCountEl = document.getElementById('pointCount');
+    const undoBtn = document.getElementById('undoBtn');
+    const redoBtn = document.getElementById('redoBtn');
+    const clearBtn = document.getElementById('clearBtn');
+
+    // HUD Elements
+    const hudPointsEl = document.getElementById('hudPoints');
+    const hudDistanceEl = document.getElementById('hudDistance');
+    const hudSlopeEl = document.getElementById('hudSlope');
+    const hudAngleEl = document.getElementById('hudAngle');
+    const hudSymmetryEl = document.getElementById('hudSymmetry');
+
+    // Audio Playback Elements
+    const playBtn = document.getElementById('playBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const scoreCardBtn = document.getElementById('scoreCardBtn');
+    const soundTestBtn = document.getElementById('soundTestBtn');
+    const playbackStatusBadge = document.getElementById('playbackStatusBadge');
+    const playbackPointTracker = document.getElementById('playbackPointTracker');
+    const audioNoteVal = document.getElementById('audioNoteVal');
+    const audioFreqVal = document.getElementById('audioFreqVal');
+    const waveformCanvas = document.getElementById('waveformCanvas');
+    const waveformCtx = waveformCanvas.getContext('2d');
+    const beatToggleBtn = document.getElementById('beatToggleBtn');
+    const rhythmStyleSelect = document.getElementById('rhythmStyleSelect');
+    const audioEngineStatus = document.getElementById('audioEngineStatus');
+
+    // Modal Result Card Elements
+    const resultModal = document.getElementById('resultModal');
+    const modalCloseBtn = document.getElementById('modalCloseBtn');
+    const modalReplayBtn = document.getElementById('modalReplayBtn');
+    const modalNewBtn = document.getElementById('modalNewBtn');
+    const compositionCategoryEl = document.getElementById('compositionCategory');
+    const cardNotesEl = document.getElementById('cardNotes');
+    const cardDistanceEl = document.getElementById('cardDistance');
+    const cardSlopeEl = document.getElementById('cardSlope');
+    const cardAngleEl = document.getElementById('cardAngle');
+    const cardSymmetryEl = document.getElementById('cardSymmetry');
+
+    // 2. STATE MANAGEMENT
+    let strokes = [];
+    let redoStack = [];
+    let isDrawing = false;
+    let currentStroke = [];
+
+    const STROKE_COLOR = '#ffb6c1';
+    const STROKE_GLOW = '#ff69b4';
+    const STROKE_WIDTH = 4;
+
+    /* ==========================================================================
+       AUDIO ENGINE: DIRECT & ROBUST HEADPHONE/SPEAKER ROUTING
+       ========================================================================== */
+    let audioCtx = null;
+    let analyser = null;
+    let waveformAnimId = null;
+
+    let isBeatsEnabled = true;
+    let currentRhythmStyle = 'electro';
+    let rhythmStep = 0;
+
+    // Harmonic C Major Pentatonic Scale (C3 to C6: 130 Hz to 1046 Hz)
+    const PENTATONIC_SCALE = [
+      { name: "C3", freq: 130.81 },
+      { name: "D3", freq: 146.83 },
+      { name: "E3", freq: 164.81 },
+      { name: "G3", freq: 196.00 },
+      { name: "A3", freq: 220.00 },
+      { name: "C4", freq: 261.63 },
+      { name: "D4", freq: 293.66 },
+      { name: "E4", freq: 329.63 },
+      { name: "G4", freq: 392.00 },
+      { name: "A4", freq: 440.00 },
+      { name: "C5", freq: 523.25 },
+      { name: "D5", freq: 587.33 },
+      { name: "E5", freq: 659.25 },
+      { name: "G5", freq: 783.99 },
+      { name: "A5", freq: 880.00 },
+      { name: "C6", freq: 1046.50 }
+    ];
+
+    // 1. Single Shared AudioContext Function
+    function getAudioContext() {
+      if (!window.audioCtx) {
+        window.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = window.audioCtx.createAnalyser();
+        analyser.fftSize = 512;
+        startWaveformMonitor();
+      }
+      if (window.audioCtx.state === 'suspended') {
+        window.audioCtx.resume();
+      }
+      if (audioEngineStatus) {
+        audioEngineStatus.textContent = `Headphones: Active (${window.audioCtx.sampleRate}Hz)`;
+      }
+      audioCtx = window.audioCtx;
+      return window.audioCtx;
+    }
+
+    // Direct Fail-Safe Audio Trigger (uses single shared getAudioContext)
+    function playTestSound() {
+      const ctx = getAudioContext();
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(440, ctx.currentTime);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      if (analyser) gain.connect(analyser);
+
+      osc.start();
+      osc.stop(ctx.currentTime + 0.5);
+    }
+
+    /* ==========================================================================
+       DRUM & PERCUSSION SYNTHESIS (DIRECT HEADPHONE ROUTING)
+       ========================================================================== */
+    function play808Kick(time) {
+      if (!audioCtx) return;
+      try {
+        const t = (typeof time === 'number' && time >= audioCtx.currentTime) ? time : audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        // Low 60Hz frequency drop: punchy 140Hz down to deep 55-60Hz sub-bass
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(140, t);
+        osc.frequency.exponentialRampToValueAtTime(55, t + 0.16);
+
+        // Comfortable audible level
+        gain.gain.setValueAtTime(0.32, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+
+        // Direct connection: Oscillator -> Gain -> Destination
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        if (analyser) gain.connect(analyser); // Tap visualizer in parallel
+
+        osc.start(t);
+        osc.stop(t + 0.25);
+        activeOscillators.push(osc);
+      } catch (e) {
+        console.warn('Kick error:', e);
+      }
+    }
+
+    function playHiHat(time) {
+      if (!audioCtx) return;
+      try {
+        const t = (typeof time === 'number' && time >= audioCtx.currentTime) ? time : audioCtx.currentTime;
+        const bufferSize = Math.max(1, Math.floor(audioCtx.sampleRate * 0.05));
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+        }
+
+        const source = audioCtx.createBufferSource();
+        source.buffer = buffer;
+
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'highpass';
+        filter.frequency.value = currentRhythmStyle === 'lofi' ? 4500 : 7000;
+
+        const gain = audioCtx.createGain();
+        gain.gain.setValueAtTime(0.18, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+
+        source.connect(filter);
+        filter.connect(gain);
+        gain.connect(audioCtx.destination);
+        if (analyser) gain.connect(analyser);
+
+        source.start(t);
+        source.stop(t + 0.06);
+        activeOscillators.push(source);
+      } catch (e) {
+        console.warn('HiHat error:', e);
+      }
+    }
+
+    function playSnareOrClap(time) {
+      if (!audioCtx) return;
+      try {
+        const t = (typeof time === 'number' && time >= audioCtx.currentTime) ? time : audioCtx.currentTime;
+        // 1. Noise Snap
+        const bufferSize = Math.max(1, Math.floor(audioCtx.sampleRate * 0.12));
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+        }
+
+        const source = audioCtx.createBufferSource();
+        source.buffer = buffer;
+
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'highpass';
+        filter.frequency.value = 1400;
+
+        const gain = audioCtx.createGain();
+        gain.gain.setValueAtTime(0.22, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+
+        source.connect(filter);
+        filter.connect(gain);
+        gain.connect(audioCtx.destination);
+        if (analyser) gain.connect(analyser);
+
+        source.start(t);
+        source.stop(t + 0.13);
+        activeOscillators.push(source);
+
+        // 2. Punch Tone
+        const tone = audioCtx.createOscillator();
+        const toneGain = audioCtx.createGain();
+        tone.type = 'triangle';
+        tone.frequency.setValueAtTime(200, t);
+        tone.frequency.exponentialRampToValueAtTime(80, t + 0.08);
+
+        toneGain.gain.setValueAtTime(0.2, t);
+        toneGain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+
+        tone.connect(toneGain);
+        toneGain.connect(audioCtx.destination);
+        if (analyser) toneGain.connect(analyser);
+
+        tone.start(t);
+        tone.stop(t + 0.11);
+        activeOscillators.push(tone);
+      } catch (e) {
+        console.warn('Snare error:', e);
+      }
+    }
+
+    function triggerRhythmGroove(now, step) {
+      if (!isBeatsEnabled || currentRhythmStyle === 'minimal') return;
+
+      const stepInMeasure = step % 8;
+
+      if (currentRhythmStyle === 'electro') {
+        if (stepInMeasure === 0 || stepInMeasure === 4) play808Kick(now);
+        if (stepInMeasure === 2 || stepInMeasure === 6) playSnareOrClap(now);
+        playHiHat(now);
+      } else if (currentRhythmStyle === 'lofi') {
+        if (stepInMeasure === 0 || stepInMeasure === 5) play808Kick(now);
+        if (stepInMeasure === 4) playSnareOrClap(now);
+        playHiHat(now);
+      } else if (currentRhythmStyle === 'cosmic') {
+        if (stepInMeasure === 0) play808Kick(now);
+        if (stepInMeasure === 4) playHiHat(now);
+      }
+    }
+
+    /* ==========================================================================
+       SYNTHESIZER VOICE ENGINE (DIRECT TO DESTINATION)
+       Directly connects: Oscillator -> GainNode -> audioCtx.destination
+       Comfortable audible gain level (0.2 to 0.3) & valid scheduling times.
+       ========================================================================== */
+    function playSynthesizedNote(pointData) {
+      if (!audioCtx || !pointData) return;
+
+      const pt = pointData.pt;
+      const prev = pointData.prev;
+
+      // 1. X-Coordinate -> Pitch (C3 130Hz to C6 1046Hz pentatonic notes)
+      const normalizedX = Math.max(0, Math.min(1, pt.x / canvas.width));
+      const noteIdx = Math.min(
+        PENTATONIC_SCALE.length - 1,
+        Math.floor(normalizedX * PENTATONIC_SCALE.length)
+      );
+      const noteInfo = PENTATONIC_SCALE[noteIdx];
+
+      audioNoteVal.textContent = noteInfo.name;
+      audioFreqVal.textContent = noteInfo.freq.toFixed(1);
+
+      let dist = 12;
+      let slope = 0;
+      if (prev) {
+        const dx = pt.x - prev.x;
+        const dy = -(pt.y - prev.y);
+        dist = Math.hypot(dx, dy);
+        slope = Math.abs(dx) < 0.001 ? 10 : dy / dx;
+      }
+
+      // Valid timing strictly relative to audioCtx.currentTime with a safe 10ms lookahead
+      const now = audioCtx.currentTime;
+      const startTime = now + 0.01;
+
+      // Rhythm Drums
+      triggerRhythmGroove(startTime, rhythmStep);
+      rhythmStep++;
+
+      // Duration & Gain
+      const noteDuration = Math.max(0.2, Math.min(0.5, (dist / 30) * 0.3));
+
+      try {
+        // Main Melodic Voice
+        const osc1 = audioCtx.createOscillator();
+        const gain1 = audioCtx.createGain();
+
+        osc1.type = Math.abs(slope) > 1.2 ? 'triangle' : 'sine';
+        osc1.frequency.setValueAtTime(noteInfo.freq, now);
+
+        // Web Audio Node Connections & Audible Level:
+        gain1.gain.setValueAtTime(0.2, now);
+        gain1.gain.linearRampToValueAtTime(0.001, now + noteDuration);
+
+        // Required connection: oscillator -> gainNode -> destination
+        osc1.connect(gain1);
+        gain1.connect(audioCtx.destination);
+        if (analyser) gain1.connect(analyser);
+
+        osc1.start();
+        osc1.stop(now + noteDuration + 0.05);
+
+        // Warm Sub-Bass Octave (freq * 0.5)
+        const subOsc = audioCtx.createOscillator();
+        const subGain = audioCtx.createGain();
+
+        subOsc.type = 'sine';
+        subOsc.frequency.setValueAtTime(noteInfo.freq * 0.5, now);
+
+        subGain.gain.setValueAtTime(0.15, now);
+        subGain.gain.linearRampToValueAtTime(0.001, now + noteDuration);
+
+        // Required connection: oscillator -> gainNode -> destination
+        subOsc.connect(subGain);
+        subGain.connect(audioCtx.destination);
+        if (analyser) subGain.connect(analyser);
+
+        subOsc.start();
+        subOsc.stop(now + noteDuration + 0.05);
+      } catch (err) {
+        console.error('Synthesizer Voice Error:', err);
+      }
+    }
+
+    /* ==========================================================================
+       PLAYBACK SEQUENCER & HIGH-DENSITY SOUND SCHEDULING ENGINE
+       ========================================================================== */
+    let playbackState = 'IDLE';
+    let currentPlayIndex = 0;
+    let playbackAnimFrameId = null;
+    let playbackStartTime = 0;
+    let playbackTotalDuration = 8.0;
+    let activePlaybackPoint = null;
+    let playbackAllPoints = [];
+    let activeOscillators = [];
+
+    // Helper mapping frequency to closest pentatonic note for HUD display
+    function getClosestNoteName(freq) {
+      let closest = PENTATONIC_SCALE[0];
+      let minDiff = Math.abs(freq - closest.freq);
+      for (let i = 1; i < PENTATONIC_SCALE.length; i++) {
+        const diff = Math.abs(freq - PENTATONIC_SCALE[i].freq);
+        if (diff < minDiff) {
+          minDiff = diff;
+          closest = PENTATONIC_SCALE[i];
+        }
+      }
+      return closest.name;
+    }
+
+    // 3. Resample drawing points evenly along the stroke path with geometry analysis
+    function resampleStrokePoints(strokeList, targetCount = 48) {
+      const segments = [];
+      let totalLength = 0;
+
+      for (const stroke of strokeList) {
+        if (!stroke || stroke.length === 0) continue;
+        if (stroke.length === 1) {
+          segments.push({
+            p1: stroke[0],
+            p2: stroke[0],
+            dist: 0,
+            startDist: totalLength,
+            endDist: totalLength,
+            speed: 0.5
+          });
+          continue;
+        }
+        for (let i = 0; i < stroke.length - 1; i++) {
+          const p1 = stroke[i];
+          const p2 = stroke[i + 1];
+          const d = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+          if (d > 0.0001) {
+            const dt = (p2.time && p1.time) ? Math.max(1, p2.time - p1.time) : 16;
+            const speed = Math.min(3.0, d / dt);
+            segments.push({
+              p1,
+              p2,
+              dist: d,
+              startDist: totalLength,
+              endDist: totalLength + d,
+              speed
+            });
+            totalLength += d;
+          }
+        }
+      }
+
+      if (segments.length === 0 || totalLength < 1) {
+        const firstPt = (strokeList[0] && strokeList[0][0]) ? strokeList[0][0] : { x: 300, y: 200 };
+        return {
+          points: Array.from({ length: targetCount }, () => ({
+            x: firstPt.x,
+            y: firstPt.y,
+            slope: 0,
+            angle: 0,
+            angleDelta: 0,
+            speed: 0.5
+          })),
+          totalLength: 0
+        };
+      }
+
+      const points = [];
+      const step = totalLength / (targetCount - 1);
+
+      for (let i = 0; i < targetCount; i++) {
+        const targetDist = Math.min(totalLength, i * step);
+        let seg = segments.find(s => targetDist >= s.startDist && targetDist <= s.endDist);
+        if (!seg) seg = segments[segments.length - 1];
+
+        const t = seg.dist > 0 ? Math.max(0, Math.min(1, (targetDist - seg.startDist) / seg.dist)) : 0;
+        const x = Math.round(seg.p1.x + (seg.p2.x - seg.p1.x) * t);
+        const y = Math.round(seg.p1.y + (seg.p2.y - seg.p1.y) * t);
+        const dx = seg.p2.x - seg.p1.x;
+        const dy = -(seg.p2.y - seg.p1.y); // Invert for Cartesian slope
+        const slope = Math.abs(dx) < 0.001 ? (dy >= 0 ? 10 : -10) : dy / dx;
+
+        points.push({
+          x,
+          y,
+          slope,
+          angle: 0,
+          angleDelta: 0,
+          speed: seg.speed || 0.5
+        });
+      }
+
+      // Compute heading angle and angle inflection (delta) between consecutive points
+      for (let i = 0; i < points.length; i++) {
+        if (i === 0) {
+          const nextPt = points[1] || points[0];
+          const segDx = nextPt.x - points[0].x;
+          const segDy = -(nextPt.y - points[0].y);
+          points[i].angle = Math.atan2(segDy, segDx) * (180 / Math.PI);
+          points[i].angleDelta = 0;
+        } else {
+          const prevPt = points[i - 1];
+          const currPt = points[i];
+          const segDx = currPt.x - prevPt.x;
+          const segDy = -(currPt.y - prevPt.y);
+          const currentAngle = Math.atan2(segDy, segDx) * (180 / Math.PI);
+          points[i].angle = currentAngle;
+
+          let diff = Math.abs(currentAngle - points[i - 1].angle);
+          if (diff > 180) diff = 360 - diff;
+          points[i].angleDelta = diff;
+        }
+      }
+
+      return { points, totalLength };
+    }
+
+    function startPlayback() {
+      // 1. Single Shared AudioContext Function
+      const ctx = getAudioContext();
+
+      // Validate that the user has drawn something
+      const rawPoints = strokes.flat().filter(pt => pt && typeof pt.x === 'number' && typeof pt.y === 'number' && !isNaN(pt.x) && !isNaN(pt.y));
+      if (rawPoints.length === 0) {
+        alert("Please draw something on the canvas first!");
+        return;
+      }
+
+      // Stop any existing playback before scheduling
+      stopPlayback();
+
+      // Higher Note Density: Resample evenly to 48 continuous notes with angle/slope data
+      const { points: resampledPoints, totalLength } = resampleStrokePoints(strokes, 48);
+      playbackAllPoints = resampledPoints;
+
+      // Stretch Playback Time: 6 to 10 seconds total based on drawing length
+      const totalDuration = Math.max(6.0, Math.min(10.0, 6.0 + (totalLength / 600) * 4.0));
+      playbackTotalDuration = totalDuration;
+
+      playbackState = 'PLAYING';
+      playbackStatusBadge.textContent = 'PLAYING';
+      playbackStatusBadge.className = 'status-badge playing';
+      updatePlaybackButtons();
+
+      currentPlayIndex = 0;
+      activeOscillators = [];
+
+      const now = ctx.currentTime + 0.02; // Small lookahead for hardware clock
+      const noteSpacing = totalDuration / resampledPoints.length;
+      const noteDuration = Math.min(0.28, noteSpacing * 1.25);
+
+      // Schedule all 48 Melodic Notes & Harmonies across the full duration
+      resampledPoints.forEach((pt, index) => {
+        const noteTime = now + (index * noteSpacing);
+
+        // 1. Pitch Mapping: Pentatonic Scale (C3 130Hz to C6 1046Hz) based on X-coordinate
+        const normalizedX = Math.max(0, Math.min(1, pt.x / canvas.width));
+        const noteIdx = Math.min(
+          PENTATONIC_SCALE.length - 1,
+          Math.floor(normalizedX * PENTATONIC_SCALE.length)
+        );
+        const baseNote = PENTATONIC_SCALE[noteIdx];
+        const freq = baseNote.freq;
+
+        // 2. Dynamic Timbre & Waveforms (Slope & Angle Mapping)
+        // - Smooth horizontal/curved strokes -> Warm 'sine' or 'triangle' wave
+        // - Sharp angles & zigzags (high slope 'm', angleDelta > 30°) -> Bright 'sawtooth' or 'square' wave
+        const absSlope = Math.abs(pt.slope || 0);
+        const angleChange = pt.angleDelta || 0;
+
+        let oscType = 'sine';
+        if (angleChange > 50 || absSlope > 3.0) {
+          oscType = 'square';   // Sharp corners & near-vertical slashes
+        } else if (angleChange > 25 || absSlope > 1.4) {
+          oscType = 'sawtooth'; // Steep slopes and curved direction shifts
+        } else if (absSlope > 0.5) {
+          oscType = 'triangle'; // Gentle slopes and soft curves
+        } else {
+          oscType = 'sine';     // Smooth horizontal sweeps
+        }
+
+        // 3. Dynamic Filter Sweep & Velocity
+        // Route synth voices through a BiquadFilterNode ('lowpass') with cutoff frequency
+        // dynamically sweeping with Y-coordinate (higher on canvas = brighter, clearer filter: 500Hz to 6000Hz).
+        const normalizedY = 1.0 - Math.max(0, Math.min(1, pt.y / canvas.height));
+        const cutoffFreq = 500 + Math.pow(normalizedY, 1.35) * 5500;
+
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(cutoffFreq, noteTime);
+        filter.Q.setValueAtTime(2.0, noteTime);
+
+        // Dynamic velocity/gain based on stroke distance/speed
+        const baseVelocity = 0.16;
+        const speedBoost = Math.min(0.12, (pt.speed || 0.5) * 0.08);
+        const velocity = Math.min(0.28, baseVelocity + speedBoost);
+
+        // Main Lead Oscillator
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = oscType;
+        osc.frequency.setValueAtTime(freq, noteTime);
+
+        gain.gain.setValueAtTime(velocity, noteTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, noteTime + noteDuration);
+
+        osc.connect(gain);
+        gain.connect(filter);
+        filter.connect(ctx.destination);
+        if (analyser) filter.connect(analyser); // Direct to oscilloscope
+
+        osc.start(noteTime);
+        osc.stop(noteTime + noteDuration + 0.05);
+        activeOscillators.push(osc);
+
+        // 4. Polyphonic Harmonies (Pentatonic Chords)
+        // Add a second harmony note (3rd or 5th note above in pentatonic scale)
+        // when drawing speed/length is high or stroke is dynamic
+        const isHighEnergy = (totalLength > 320) || (pt.speed > 0.4) || (absSlope > 0.85);
+        if (isHighEnergy) {
+          const harmonyStep = (index % 2 === 0) ? 2 : 4; // 3rd or 5th pentatonic step
+          const harmTargetIdx = noteIdx + harmonyStep;
+          let harmonyFreq;
+          if (harmTargetIdx < PENTATONIC_SCALE.length) {
+            harmonyFreq = PENTATONIC_SCALE[harmTargetIdx].freq;
+          } else {
+            const wrappedIdx = harmTargetIdx % PENTATONIC_SCALE.length;
+            harmonyFreq = PENTATONIC_SCALE[wrappedIdx].freq * 2.0;
+          }
+
+          const harmOsc = ctx.createOscillator();
+          const harmGain = ctx.createGain();
+
+          harmOsc.type = (oscType === 'square') ? 'sawtooth' : (oscType === 'sawtooth' ? 'triangle' : 'sine');
+          harmOsc.frequency.setValueAtTime(harmonyFreq, noteTime);
+
+          const harmVolume = velocity * 0.55;
+          harmGain.gain.setValueAtTime(harmVolume, noteTime);
+          harmGain.gain.exponentialRampToValueAtTime(0.001, noteTime + noteDuration);
+
+          harmOsc.connect(harmGain);
+          harmGain.connect(filter);
+
+          harmOsc.start(noteTime);
+          harmOsc.stop(noteTime + noteDuration + 0.05);
+          activeOscillators.push(harmOsc);
+        }
+
+        // Warm Sub-Bass Note (octave down: freq * 0.5)
+        const subOsc = ctx.createOscillator();
+        const subGain = ctx.createGain();
+        subOsc.type = 'sine';
+        subOsc.frequency.setValueAtTime(freq * 0.5, noteTime);
+        subGain.gain.setValueAtTime(0.12, noteTime);
+        subGain.gain.exponentialRampToValueAtTime(0.001, noteTime + noteDuration);
+
+        subOsc.connect(subGain);
+        subGain.connect(filter);
+
+        subOsc.start(noteTime);
+        subOsc.stop(noteTime + noteDuration + 0.05);
+        activeOscillators.push(subOsc);
+
+        // 5. Direction-Change Percussive Taps (Hi-Hat / Snare when line changes direction)
+        if (isBeatsEnabled && angleChange > 25) {
+          if (angleChange > 65) {
+            playSnareOrClap(noteTime);
+          } else {
+            playHiHat(noteTime);
+          }
+        }
+      });
+
+      // 6. Dual-Layer Percussion & Rhythm Track: Steady Bass / Major Beat Kicks
+      if (isBeatsEnabled) {
+        const beatInterval = 0.25; // Quarter beat pulse
+        const totalBeats = Math.floor(totalDuration / beatInterval);
+
+        for (let b = 0; b < totalBeats; b++) {
+          const beatTime = now + (b * beatInterval);
+          const progress = (b * beatInterval) / totalDuration;
+          const ptIdx = Math.min(resampledPoints.length - 1, Math.floor(progress * resampledPoints.length));
+          const pt = resampledPoints[ptIdx];
+
+          const normalizedY = 1.0 - (pt.y / canvas.height);
+          const absSlope = Math.abs(pt.slope || 0);
+
+          // Major Beat Kick: Low 60Hz frequency drop on on-beats (every 0.5s)
+          if (b % 2 === 0) {
+            play808Kick(beatTime);
+          }
+
+          // Snare / Clap on Backbeats (quarter-beat 2 and 6)
+          if (b % 4 === 2) {
+            playSnareOrClap(beatTime);
+          }
+
+          // Crisp Hi-Hat pulses across all beats + 16th-note double-time rolls when high Y or steep slope
+          playHiHat(beatTime);
+          if (normalizedY > 0.5 || absSlope > 1.4) {
+            playHiHat(beatTime + 0.125);
+          }
+          if (absSlope > 2.8) {
+            playHiHat(beatTime + 0.0625);
+          }
+        }
+      }
+
+      // 7. Synchronized Visual Scanner Line (Smooth 60FPS requestAnimationFrame sweep)
+      playbackStartTime = performance.now();
+
+      function animateVisualScanLine(timestamp) {
+        if (playbackState !== 'PLAYING') return;
+
+        const elapsed = (timestamp - playbackStartTime) / 1000;
+        const progress = Math.min(1.0, elapsed / totalDuration);
+
+        // Find active point on the resampled path
+        const pointIdx = Math.min(resampledPoints.length - 1, Math.floor(progress * resampledPoints.length));
+        const currentPt = resampledPoints[pointIdx];
+        activePlaybackPoint = currentPt;
+
+        // Update real-time frequency HUD with exact pentatonic note
+        const normalizedX = Math.max(0, Math.min(1, currentPt.x / canvas.width));
+        const noteIdx = Math.min(
+          PENTATONIC_SCALE.length - 1,
+          Math.floor(normalizedX * PENTATONIC_SCALE.length)
+        );
+        const activeNote = PENTATONIC_SCALE[noteIdx];
+        audioNoteVal.textContent = activeNote.name;
+        audioFreqVal.textContent = activeNote.freq.toFixed(1);
+        playbackPointTracker.textContent = `${pointIdx + 1}/${resampledPoints.length}`;
+
+        redrawCanvas();
+
+        if (progress < 1.0) {
+          playbackAnimFrameId = requestAnimationFrame(animateVisualScanLine);
+        } else {
+          stopPlayback();
+          playbackStatusBadge.textContent = 'FINISHED';
+          playbackStatusBadge.className = 'status-badge';
+          openResultModal();
+        }
+      }
+
+      playbackAnimFrameId = requestAnimationFrame(animateVisualScanLine);
+    }
+
+    function pausePlayback() {
+      if (playbackState !== 'PLAYING') return;
+      playbackState = 'PAUSED';
+      if (playbackAnimFrameId) cancelAnimationFrame(playbackAnimFrameId);
+
+      activeOscillators.forEach(osc => {
+        try { osc.stop(); } catch(e) {}
+      });
+      activeOscillators = [];
+
+      playbackStatusBadge.textContent = 'PAUSED';
+      playbackStatusBadge.className = 'status-badge';
+
+      updatePlaybackButtons();
+    }
+
+    function stopPlayback() {
+      playbackState = 'IDLE';
+      if (playbackAnimFrameId) cancelAnimationFrame(playbackAnimFrameId);
+
+      activeOscillators.forEach(osc => {
+        try { osc.stop(); } catch(e) {}
+      });
+      activeOscillators = [];
+
+      currentPlayIndex = 0;
+      activePlaybackPoint = null;
+      audioNoteVal.textContent = '--';
+      audioFreqVal.textContent = '--';
+
+      playbackStatusBadge.textContent = 'READY';
+      playbackStatusBadge.className = 'status-badge';
+      const totalPts = playbackAllPoints.length || strokes.flat().length;
+      playbackPointTracker.textContent = `0/${totalPts}`;
+
+      updatePlaybackButtons();
+      redrawCanvas();
+    }
+
+    function updatePlaybackButtons() {
+      playBtn.disabled = playbackState === 'PLAYING';
+      pauseBtn.disabled = playbackState !== 'PLAYING';
+      stopBtn.disabled = playbackState === 'IDLE';
+      scoreCardBtn.disabled = strokes.length === 0;
+    }
+
+    /* ==========================================================================
+       SUBTLE BABY PINK OSCILLOSCOPE MONITOR
+       ========================================================================== */
+    function startWaveformMonitor() {
+      if (!analyser) return;
+
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+
+      function drawWave() {
+        waveformAnimId = requestAnimationFrame(drawWave);
+        analyser.getByteTimeDomainData(dataArray);
+
+        const w = waveformCanvas.width;
+        const h = waveformCanvas.height;
+
+        waveformCtx.fillStyle = '#090d13';
+        waveformCtx.fillRect(0, 0, w, h);
+
+        waveformCtx.lineWidth = 1.8;
+        waveformCtx.strokeStyle = '#ffb6c1';
+        waveformCtx.shadowColor = '#f48fb1';
+        waveformCtx.shadowBlur = 6;
+        waveformCtx.beginPath();
+
+        const sliceWidth = w / bufferLength;
+        let x = 0;
+
+        for (let i = 0; i < bufferLength; i++) {
+          const v = dataArray[i] / 128.0;
+          const y = (v * h) / 2;
+
+          if (i === 0) {
+            waveformCtx.moveTo(x, y);
+          } else {
+            waveformCtx.lineTo(x, y);
+          }
+
+          x += sliceWidth;
+        }
+
+        waveformCtx.lineTo(w, h / 2);
+        waveformCtx.stroke();
+      }
+
+      drawWave();
+    }
+
+    /* ==========================================================================
+       CARTESIAN GRID RENDERING
+       ========================================================================== */
+    function drawCartesianGrid() {
+      const width = canvas.width;
+      const height = canvas.height;
+      const gridSize = 25;
+
+      ctx.fillStyle = '#090d13';
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.save();
+      ctx.lineWidth = 1;
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.beginPath();
+      for (let x = 0; x <= width; x += gridSize) {
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+      }
+      for (let y = 0; y <= height; y += gridSize) {
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+      }
+      ctx.stroke();
+
+      const midX = width / 2;
+      const midY = height / 2;
+
+      ctx.strokeStyle = 'rgba(255, 182, 193, 0.22)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(0, midY);
+      ctx.lineTo(width, midY);
+      ctx.moveTo(midX, 0);
+      ctx.lineTo(midX, height);
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(255, 182, 193, 0.4)';
+      ctx.font = '10px ui-monospace, monospace';
+      ctx.fillText('+X', width - 20, midY - 6);
+      ctx.fillText('-X', 8, midY - 6);
+      ctx.fillText('-Y', midX + 6, height - 8);
+      ctx.fillText('+Y', midX + 6, 14);
+      ctx.fillText('(0, 0)', midX + 6, midY - 6);
+
+      ctx.restore();
+    }
+
+    function renderStroke(strokePoints) {
+      if (!strokePoints || strokePoints.length === 0) return;
+
+      ctx.save();
+      ctx.strokeStyle = STROKE_COLOR;
+      ctx.lineWidth = STROKE_WIDTH;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      ctx.shadowColor = STROKE_GLOW;
+      ctx.shadowBlur = 10;
+
+      ctx.beginPath();
+
+      if (strokePoints.length === 1) {
+        const pt = strokePoints[0];
+        ctx.arc(pt.x, pt.y, STROKE_WIDTH / 2, 0, Math.PI * 2);
+        ctx.fillStyle = STROKE_COLOR;
+        ctx.fill();
+      } else {
+        ctx.moveTo(strokePoints[0].x, strokePoints[0].y);
+        for (let i = 1; i < strokePoints.length; i++) {
+          ctx.lineTo(strokePoints[i].x, strokePoints[i].y);
+        }
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    function renderPlaybackScanner() {
+      if (!activePlaybackPoint) return;
+
+      ctx.save();
+      const x = activePlaybackPoint.x;
+      const y = activePlaybackPoint.y;
+
+      const scanGrad = ctx.createLinearGradient(x - 15, 0, x + 15, 0);
+      scanGrad.addColorStop(0, 'rgba(255, 182, 193, 0)');
+      scanGrad.addColorStop(0.5, 'rgba(255, 182, 193, 0.45)');
+      scanGrad.addColorStop(1, 'rgba(255, 182, 193, 0)');
+
+      ctx.fillStyle = scanGrad;
+      ctx.fillRect(x - 15, 0, 30, canvas.height);
+
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, canvas.height);
+      ctx.stroke();
+
+      ctx.shadowColor = '#ffffff';
+      ctx.shadowBlur = 16;
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(x, y, 7, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = '#f48fb1';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(x, y, 12, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function redrawCanvas() {
+      drawCartesianGrid();
+
+      for (const stroke of strokes) {
+        renderStroke(stroke);
+      }
+
+      if (currentStroke.length > 0) {
+        renderStroke(currentStroke);
+      }
+
+      if (playbackState === 'PLAYING' || playbackState === 'PAUSED') {
+        renderPlaybackScanner();
+      }
+
+      updateDashboardAndMath();
+    }
+
+    /* ==========================================================================
+       COORDINATE EXTRACTION
+       ========================================================================== */
+    function getCanvasCoordinates(event) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+
+      let clientX, clientY;
+      if (event.touches && event.touches.length > 0) {
+        clientX = event.touches[0].clientX;
+        clientY = event.touches[0].clientY;
+      } else {
+        clientX = event.clientX;
+        clientY = event.clientY;
+      }
+
+      const x = Math.round((clientX - rect.left) * scaleX);
+      const y = Math.round((clientY - rect.top) * scaleY);
+
+      return {
+        x: Math.max(0, Math.min(canvas.width, isNaN(x) ? 0 : x)),
+        y: Math.max(0, Math.min(canvas.height, isNaN(y) ? 0 : y)),
+        time: performance.now()
+      };
+    }
+
+    /* ==========================================================================
+       DRAWING EVENT HANDLERS
+       1. AudioContext Auto-Resume whenever the user draws!
+       ========================================================================== */
+    function startDrawing(event) {
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+
+      if (playbackState === 'PLAYING') {
+        stopPlayback();
+      }
+
+      event.preventDefault();
+      isDrawing = true;
+      redoStack = [];
+
+      const coords = getCanvasCoordinates(event);
+      currentStroke = [coords];
+      redrawCanvas();
+    }
+
+    function drawMove(event) {
+      const coords = getCanvasCoordinates(event);
+      cursorPosTracker.innerHTML = `Cursor: <span class="coord-value">X: ${coords.x}, Y: ${coords.y}</span>`;
+
+      if (!isDrawing) return;
+      event.preventDefault();
+
+      const lastPoint = currentStroke[currentStroke.length - 1];
+      if (!lastPoint || Math.hypot(coords.x - lastPoint.x, coords.y - lastPoint.y) >= 2) {
+        currentStroke.push(coords);
+        redrawCanvas();
+      }
+    }
+
+    function stopDrawing(event) {
+      if (!isDrawing) return;
+      isDrawing = false;
+
+      if (currentStroke.length > 0) {
+        strokes.push(currentStroke);
+        currentStroke = [];
+        flatPointList = flattenStrokes();
+      }
+
+      redrawCanvas();
+      updatePlaybackButtons();
+    }
+
+    /* ==========================================================================
+       MATHEMATICAL ENGINE CALCULATIONS
+       ========================================================================== */
+    function calculateDrawingMathematics() {
+      const allStrokes = [...strokes];
+      if (currentStroke.length > 0) {
+        allStrokes.push(currentStroke);
+      }
+
+      const allPoints = [];
+      for (const stroke of allStrokes) {
+        for (const pt of stroke) {
+          allPoints.push(pt);
+        }
+      }
+
+      const totalPoints = allPoints.length;
+
+      if (totalPoints === 0) {
+        return {
+          totalPoints: 0,
+          totalDistance: 0,
+          averageSlope: 0,
+          averageAngle: 0,
+          symmetryPercent: null
+        };
+      }
+
+      let totalDistance = 0;
+      let totalSlope = 0;
+      let totalAngle = 0;
+      let segmentCount = 0;
+
+      for (const stroke of allStrokes) {
+        for (let i = 0; i < stroke.length - 1; i++) {
+          const p1 = stroke[i];
+          const p2 = stroke[i + 1];
+
+          const dx = p2.x - p1.x;
+          const dy = -(p2.y - p1.y);
+
+          const dist = Math.hypot(dx, dy);
+          totalDistance += dist;
+
+          let slope;
+          if (Math.abs(dx) < 0.0001) {
+            slope = dy >= 0 ? 50 : -50;
+          } else {
+            slope = dy / dx;
+            slope = Math.max(-50, Math.min(50, slope));
+          }
+          totalSlope += slope;
+
+          let angleRad = Math.atan2(Math.abs(dy), Math.abs(dx));
+          let angleDeg = (angleRad * 180) / Math.PI;
+          totalAngle += angleDeg;
+
+          segmentCount++;
+        }
+      }
+
+      const averageSlope = segmentCount > 0 ? (totalSlope / segmentCount) : 0;
+      const averageAngle = segmentCount > 0 ? (totalAngle / segmentCount) : 0;
+
+      let symmetryPercent = null;
+      if (totalPoints >= 4) {
+        const centerX = canvas.width / 2;
+        const sampleStep = Math.max(1, Math.floor(allPoints.length / 50));
+        let totalReflectionError = 0;
+        let sampledCount = 0;
+
+        for (let i = 0; i < allPoints.length; i += sampleStep) {
+          const pt = allPoints[i];
+          const mirroredX = 2 * centerX - pt.x;
+          const mirroredY = pt.y;
+
+          let minDistance = Infinity;
+          for (let j = 0; j < allPoints.length; j += Math.max(1, Math.floor(allPoints.length / 100))) {
+            const candidate = allPoints[j];
+            const d = Math.hypot(candidate.x - mirroredX, candidate.y - mirroredY);
+            if (d < minDistance) {
+              minDistance = d;
+            }
+          }
+
+          totalReflectionError += minDistance;
+          sampledCount++;
+        }
+
+        const avgError = sampledCount > 0 ? (totalReflectionError / sampledCount) : 0;
+        const calculatedSymmetry = Math.round(100 * Math.exp(-avgError / 50));
+        symmetryPercent = Math.max(0, Math.min(100, calculatedSymmetry));
+      }
+
+      return {
+        totalPoints,
+        totalDistance: Math.round(totalDistance),
+        averageSlope: averageSlope.toFixed(2),
+        averageAngle: averageAngle.toFixed(1),
+        symmetryPercent
+      };
+    }
+
+    function updateDashboardAndMath() {
+      const math = calculateDrawingMathematics();
+
+      hudPointsEl.textContent = math.totalPoints;
+      hudDistanceEl.textContent = math.totalDistance;
+      hudSlopeEl.textContent = (math.averageSlope > 0 ? '+' : '') + math.averageSlope;
+      hudAngleEl.textContent = math.averageAngle;
+      hudSymmetryEl.textContent = math.symmetryPercent !== null ? math.symmetryPercent : '--';
+
+      strokeCountEl.textContent = strokes.length + (currentStroke.length > 0 ? 1 : 0);
+      pointCountEl.textContent = math.totalPoints;
+
+      undoBtn.disabled = strokes.length === 0 || playbackState === 'PLAYING';
+      redoBtn.disabled = redoStack.length === 0 || playbackState === 'PLAYING';
+      clearBtn.disabled = (strokes.length === 0 && currentStroke.length === 0) || playbackState === 'PLAYING';
+
+      updatePlaybackButtons();
+    }
+
+    function handleUndo() {
+      if (strokes.length === 0 || playbackState === 'PLAYING') return;
+      const undoneStroke = strokes.pop();
+      redoStack.push(undoneStroke);
+      flatPointList = flattenStrokes();
+      redrawCanvas();
+    }
+
+    function handleRedo() {
+      if (redoStack.length === 0 || playbackState === 'PLAYING') return;
+      const redoneStroke = redoStack.pop();
+      strokes.push(redoneStroke);
+      flatPointList = flattenStrokes();
+      redrawCanvas();
+    }
+
+    function handleClear() {
+      if (playbackState === 'PLAYING') stopPlayback();
+      strokes = [];
+      redoStack = [];
+      currentStroke = [];
+      flatPointList = [];
+      closeResultModal();
+      redrawCanvas();
+    }
+
+    function getMusicalCategory(math) {
+      const slope = parseFloat(math.averageSlope);
+      const angle = parseFloat(math.averageAngle);
+      const sym = math.symmetryPercent !== null ? math.symmetryPercent : 0;
+
+      if (sym >= 75) return '"Bilateral Harmonic Symmetrical Sonata"';
+      if (slope > 1.0) return '"Ascending Pentatonic Crest"';
+      if (slope < -1.0) return '"Cascading Descents in C Major"';
+      if (angle > 50) return '"Polygonal Curvature Rhapsody"';
+      if (math.totalPoints < 10) return '"Minimalist Staccato Prelude"';
+      return '"Linear Geometric Nocturne"';
+    }
+
+    function openResultModal() {
+      if (strokes.length === 0) return;
+      const math = calculateDrawingMathematics();
+
+      cardNotesEl.textContent = (playbackAllPoints.length > 0) ? playbackAllPoints.length : math.totalPoints;
+      cardDistanceEl.textContent = math.totalDistance;
+      cardSlopeEl.textContent = (math.averageSlope > 0 ? '+' : '') + math.averageSlope;
+      cardAngleEl.textContent = math.averageAngle;
+      cardSymmetryEl.textContent = math.symmetryPercent !== null ? math.symmetryPercent : '--';
+      compositionCategoryEl.textContent = getMusicalCategory(math);
+
+      resultModal.classList.add('active');
+    }
+
+    function closeResultModal() {
+      resultModal.classList.remove('active');
+    }
+
+    document.querySelectorAll('.accordion-trigger').forEach(trigger => {
+      trigger.addEventListener('click', () => {
+        const item = trigger.closest('.accordion-item');
+        const isOpen = item.classList.contains('open');
+
+        document.querySelectorAll('.accordion-item').forEach(other => {
+          if (other !== item) other.classList.remove('open');
+        });
+
+        item.classList.toggle('open', !isOpen);
+        trigger.setAttribute('aria-expanded', !isOpen);
+      });
+    });
+
+    beatToggleBtn.addEventListener('click', () => {
+      isBeatsEnabled = !isBeatsEnabled;
+      beatToggleBtn.classList.toggle('active', isBeatsEnabled);
+      beatToggleBtn.innerHTML = `<span>&#9679;</span> Beats: ${isBeatsEnabled ? 'ON' : 'OFF'}`;
+    });
+
+    rhythmStyleSelect.addEventListener('change', (e) => {
+      currentRhythmStyle = e.target.value;
+    });
+
+    // 2. Direct Fail-Safe Audio Trigger on Test Audio click:
+    soundTestBtn.addEventListener('click', () => {
+      soundTestBtn.innerHTML = '&#128266; PLAYING...';
+      playTestSound();
+      setTimeout(() => {
+        soundTestBtn.innerHTML = '&#128266; TEST AUDIO';
+      }, 550);
+    });
+
+    canvas.addEventListener('mousedown', startDrawing);
+    window.addEventListener('mousemove', (e) => {
+      if (isDrawing || e.target === canvas) {
+        drawMove(e);
+      }
+    });
+    window.addEventListener('mouseup', stopDrawing);
+
+    canvas.addEventListener('mouseleave', () => {
+      if (!isDrawing) {
+        cursorPosTracker.innerHTML = 'Cursor: <span class="coord-value">X: --, Y: --</span>';
+      }
+    });
+
+    canvas.addEventListener('touchstart', startDrawing, { passive: false });
+    window.addEventListener('touchmove', (e) => {
+      if (isDrawing) {
+        drawMove(e);
+      }
+    }, { passive: false });
+    window.addEventListener('touchend', stopDrawing);
+    window.addEventListener('touchcancel', stopDrawing);
+
+    undoBtn.addEventListener('click', handleUndo);
+    redoBtn.addEventListener('click', handleRedo);
+    clearBtn.addEventListener('click', handleClear);
+
+    playBtn.addEventListener('click', startPlayback);
+    pauseBtn.addEventListener('click', pausePlayback);
+    stopBtn.addEventListener('click', stopPlayback);
+    scoreCardBtn.addEventListener('click', openResultModal);
+
+    modalCloseBtn.addEventListener('click', closeResultModal);
+    resultModal.addEventListener('click', (e) => {
+      if (e.target === resultModal) closeResultModal();
+    });
+    modalReplayBtn.addEventListener('click', () => {
+      closeResultModal();
+      startPlayback();
+    });
+    modalNewBtn.addEventListener('click', () => {
+      closeResultModal();
+      handleClear();
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (playbackState === 'PLAYING') {
+          pausePlayback();
+        } else {
+          startPlayback();
+        }
+      }
+
+      if (e.code === 'Escape') {
+        if (resultModal.classList.contains('active')) {
+          closeResultModal();
+        } else if (playbackState !== 'IDLE') {
+          stopPlayback();
+        }
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+      }
+
+      if (((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') ||
+          ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'z')) {
+        e.preventDefault();
+        handleRedo();
+      }
+
+      if (e.key.toLowerCase() === 'c' && !e.ctrlKey && !e.metaKey) {
+        if (!resultModal.classList.contains('active')) {
+          handleClear();
+        }
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      redrawCanvas();
+      waveformCtx.fillStyle = '#090d13';
+      waveformCtx.fillRect(0, 0, waveformCanvas.width, waveformCanvas.height);
+      waveformCtx.strokeStyle = 'rgba(255, 182, 193, 0.3)';
+      waveformCtx.lineWidth = 1.5;
+      waveformCtx.beginPath();
+      waveformCtx.moveTo(0, waveformCanvas.height / 2);
+      waveformCtx.lineTo(waveformCanvas.width, waveformCanvas.height / 2);
+      waveformCtx.stroke();
+    });
+  </script>
+</body>
+</html>
