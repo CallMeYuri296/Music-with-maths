@@ -449,6 +449,23 @@
       box-shadow: none;
     }
 
+    .btn-clear-prominent {
+      background: rgba(255, 182, 193, 0.08);
+      border: 1.5px solid var(--pink-primary) !important;
+      color: var(--pink-primary) !important;
+      box-shadow: 0 0 12px rgba(255, 182, 193, 0.22);
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-clear-prominent:hover:not(:disabled) {
+      background: rgba(255, 182, 193, 0.2) !important;
+      border-color: #ffffff !important;
+      box-shadow: 0 0 20px rgba(255, 182, 193, 0.5) !important;
+      color: #ffffff !important;
+      transform: translateY(-2px);
+    }
+
     .status-counters {
       font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
       font-size: 0.88rem;
@@ -910,6 +927,9 @@
           <button id="stopBtn" class="btn" title="Stop and reset playback" disabled>
             &#9632; STOP
           </button>
+          <button id="clearBtn" class="btn btn-clear-prominent" title="Clear canvas and reset composition">
+            &times; CLEAR CANVAS
+          </button>
           <button id="scoreCardBtn" class="btn" title="View your mathematical composition scorecard" disabled>
             &#9733; SCORE CARD
           </button>
@@ -1041,7 +1061,7 @@
         <button id="redoBtn" class="btn" title="Redo the last undone stroke" disabled>
           &#8631; Redo
         </button>
-        <button id="clearBtn" class="btn" title="Clear all strokes" disabled>
+        <button id="bottomClearBtn" class="btn" title="Clear all strokes">
           &times; Clear Canvas
         </button>
       </div>
@@ -1131,16 +1151,16 @@
       <button class="modal-close-btn" id="modalCloseBtn" aria-label="Close Scorecard">&times;</button>
       
       <div class="result-badge">&#10024; Performance Complete</div>
-      <h2 class="result-title" id="modalTitle">Your <span>Math</span> Score</h2>
+      <h2 class="result-title" id="modalTitle">Your <span>Mathematical</span> Composition</h2>
       <div class="result-subtitle" id="compositionCategory">"Harmonic Curvilinear Melody"</div>
 
       <div class="result-stats-grid">
         <div class="result-stat-box">
-          <div class="result-stat-label">Total Notes Played</div>
-          <div class="result-stat-value" id="cardNotes">0</div>
+          <div class="result-stat-label">Total Points Tracked</div>
+          <div class="result-stat-value" id="cardPoints">0</div>
         </div>
         <div class="result-stat-box">
-          <div class="result-stat-label">Pixels Travelled</div>
+          <div class="result-stat-label">Total Distance</div>
           <div class="result-stat-value"><span id="cardDistance">0</span> px</div>
         </div>
         <div class="result-stat-box">
@@ -1151,16 +1171,20 @@
           <div class="result-stat-label">Average Angle</div>
           <div class="result-stat-value"><span id="cardAngle">0.0</span>&deg;</div>
         </div>
-      </div>
-
-      <div class="result-stat-box" style="margin-bottom: 24px;">
-        <div class="result-stat-label">Bilateral Symmetry Index</div>
-        <div class="result-stat-value" style="color: var(--accent-green);"><span id="cardSymmetry">--</span>%</div>
+        <div class="result-stat-box">
+          <div class="result-stat-label">Estimated Symmetry</div>
+          <div class="result-stat-value" style="color: var(--accent-green);"><span id="cardSymmetry">--</span>%</div>
+        </div>
+        <div class="result-stat-box">
+          <div class="result-stat-label">Notes Generated</div>
+          <div class="result-stat-value" id="cardNotes">0</div>
+        </div>
       </div>
 
       <div class="result-actions">
-        <button id="modalReplayBtn" class="btn play-btn">&#9654; Replay Composition</button>
-        <button id="modalNewBtn" class="btn">&#9998; Draw New Pattern</button>
+        <button id="modalReplayBtn" class="btn play-btn" title="Replay this composition">&#9654; Replay</button>
+        <button id="modalDrawAgainBtn" class="btn btn-clear-prominent" title="Clear canvas and draw a new composition">&#9998; Draw Again</button>
+        <button id="modalCloseActionBtn" class="btn" title="Close scorecard">Close</button>
       </div>
     </div>
   </div>
@@ -1179,6 +1203,7 @@
     const undoBtn = document.getElementById('undoBtn');
     const redoBtn = document.getElementById('redoBtn');
     const clearBtn = document.getElementById('clearBtn');
+    const bottomClearBtn = document.getElementById('bottomClearBtn');
 
     // HUD Elements
     const hudPointsEl = document.getElementById('hudPoints');
@@ -1207,8 +1232,10 @@
     const resultModal = document.getElementById('resultModal');
     const modalCloseBtn = document.getElementById('modalCloseBtn');
     const modalReplayBtn = document.getElementById('modalReplayBtn');
-    const modalNewBtn = document.getElementById('modalNewBtn');
+    const modalDrawAgainBtn = document.getElementById('modalDrawAgainBtn');
+    const modalCloseActionBtn = document.getElementById('modalCloseActionBtn');
     const compositionCategoryEl = document.getElementById('compositionCategory');
+    const cardPointsEl = document.getElementById('cardPoints');
     const cardNotesEl = document.getElementById('cardNotes');
     const cardDistanceEl = document.getElementById('cardDistance');
     const cardSlopeEl = document.getElementById('cardSlope');
@@ -1220,6 +1247,7 @@
     let redoStack = [];
     let isDrawing = false;
     let currentStroke = [];
+    let currentScannerX = null;
 
     const STROKE_COLOR = '#ffb6c1';
     const STROKE_GLOW = '#ff69b4';
@@ -1840,6 +1868,7 @@
 
       // 7. Synchronized Visual Scanner Line (Smooth 60FPS requestAnimationFrame sweep)
       playbackStartTime = performance.now();
+      currentScannerX = 0;
 
       function animateVisualScanLine(timestamp) {
         if (playbackState !== 'PLAYING') return;
@@ -1847,12 +1876,15 @@
         const elapsed = (timestamp - playbackStartTime) / 1000;
         const progress = Math.min(1.0, elapsed / totalDuration);
 
+        // Smooth continuous vertical scanner line sweeping across canvas width
+        currentScannerX = progress * canvas.width;
+
         // Find active point on the resampled path
         const pointIdx = Math.min(resampledPoints.length - 1, Math.floor(progress * resampledPoints.length));
         const currentPt = resampledPoints[pointIdx];
         activePlaybackPoint = currentPt;
 
-        // Update real-time frequency HUD with exact pentatonic note
+        // Update real-time frequency & live coordinate HUD with exact values
         const normalizedX = Math.max(0, Math.min(1, currentPt.x / canvas.width));
         const noteIdx = Math.min(
           PENTATONIC_SCALE.length - 1,
@@ -1861,6 +1893,7 @@
         const activeNote = PENTATONIC_SCALE[noteIdx];
         audioNoteVal.textContent = activeNote.name;
         audioFreqVal.textContent = activeNote.freq.toFixed(1);
+        cursorPosTracker.innerHTML = `Playing: <span class="coord-value">X: ${currentPt.x}, Y: ${currentPt.y}</span>`;
         playbackPointTracker.textContent = `${pointIdx + 1}/${resampledPoints.length}`;
 
         redrawCanvas();
@@ -1868,10 +1901,16 @@
         if (progress < 1.0) {
           playbackAnimFrameId = requestAnimationFrame(animateVisualScanLine);
         } else {
-          stopPlayback();
+          playbackState = 'FINISHED';
+          if (playbackAnimFrameId) cancelAnimationFrame(playbackAnimFrameId);
+          currentScannerX = canvas.width;
           playbackStatusBadge.textContent = 'FINISHED';
           playbackStatusBadge.className = 'status-badge';
-          openResultModal();
+          updatePlaybackButtons();
+          redrawCanvas();
+          setTimeout(() => {
+            openResultModal();
+          }, 200);
         }
       }
 
@@ -1892,6 +1931,7 @@
       playbackStatusBadge.className = 'status-badge';
 
       updatePlaybackButtons();
+      redrawCanvas();
     }
 
     function stopPlayback() {
@@ -1905,8 +1945,10 @@
 
       currentPlayIndex = 0;
       activePlaybackPoint = null;
+      currentScannerX = null;
       audioNoteVal.textContent = '--';
       audioFreqVal.textContent = '--';
+      cursorPosTracker.innerHTML = 'Cursor: <span class="coord-value">X: --, Y: --</span>';
 
       playbackStatusBadge.textContent = 'READY';
       playbackStatusBadge.className = 'status-badge';
@@ -1920,8 +1962,12 @@
     function updatePlaybackButtons() {
       playBtn.disabled = playbackState === 'PLAYING';
       pauseBtn.disabled = playbackState !== 'PLAYING';
-      stopBtn.disabled = playbackState === 'IDLE';
+      stopBtn.disabled = (playbackState === 'IDLE' && currentScannerX === null);
       scoreCardBtn.disabled = strokes.length === 0;
+      if (undoBtn) undoBtn.disabled = strokes.length === 0 || playbackState === 'PLAYING';
+      if (redoBtn) redoBtn.disabled = redoStack.length === 0 || playbackState === 'PLAYING';
+      if (clearBtn) clearBtn.disabled = playbackState === 'PLAYING';
+      if (bottomClearBtn) bottomClearBtn.disabled = strokes.length === 0 || playbackState === 'PLAYING';
     }
 
     /* ==========================================================================
@@ -2048,43 +2094,96 @@
         ctx.stroke();
       }
 
+      // Render visible coordinate points along the stroke
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = '#ff69b4';
+      ctx.shadowBlur = 6;
+      const step = Math.max(1, Math.floor(strokePoints.length / 20));
+      for (let i = 0; i < strokePoints.length; i += step) {
+        const p = strokePoints[i];
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      if (strokePoints.length > 1) {
+        const lastP = strokePoints[strokePoints.length - 1];
+        ctx.beginPath();
+        ctx.arc(lastP.x, lastP.y, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
       ctx.restore();
     }
 
     function renderPlaybackScanner() {
-      if (!activePlaybackPoint) return;
+      if (playbackState !== 'PLAYING' && playbackState !== 'PAUSED' && playbackState !== 'FINISHED') return;
+      if (currentScannerX === null && !activePlaybackPoint) return;
+
+      const scanX = (typeof currentScannerX === 'number') ? currentScannerX : (activePlaybackPoint ? activePlaybackPoint.x : 0);
 
       ctx.save();
-      const x = activePlaybackPoint.x;
-      const y = activePlaybackPoint.y;
 
-      const scanGrad = ctx.createLinearGradient(x - 15, 0, x + 15, 0);
+      // 1. Vertical Glowing Baby Pink Scanner Beam
+      const beamWidth = 24;
+      const scanGrad = ctx.createLinearGradient(scanX - beamWidth, 0, scanX + beamWidth, 0);
       scanGrad.addColorStop(0, 'rgba(255, 182, 193, 0)');
-      scanGrad.addColorStop(0.5, 'rgba(255, 182, 193, 0.45)');
+      scanGrad.addColorStop(0.5, 'rgba(255, 182, 193, 0.35)');
       scanGrad.addColorStop(1, 'rgba(255, 182, 193, 0)');
 
       ctx.fillStyle = scanGrad;
-      ctx.fillRect(x - 15, 0, 30, canvas.height);
+      ctx.fillRect(scanX - beamWidth, 0, beamWidth * 2, canvas.height);
 
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, canvas.height);
-      ctx.stroke();
-
-      ctx.shadowColor = '#ffffff';
-      ctx.shadowBlur = 16;
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(x, y, 7, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.strokeStyle = '#f48fb1';
+      // Vertical Laser Line
+      ctx.strokeStyle = '#ffb6c1';
+      ctx.shadowColor = '#ff69b4';
+      ctx.shadowBlur = 14;
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.arc(x, y, 12, 0, Math.PI * 2);
+      ctx.moveTo(scanX, 0);
+      ctx.lineTo(scanX, canvas.height);
       ctx.stroke();
+
+      // 2. Highlight Active Point (x, y) with glowing circle / pulse
+      if (activePlaybackPoint) {
+        const px = activePlaybackPoint.x;
+        const py = activePlaybackPoint.y;
+
+        // Outer pulsing wave
+        const pulseTime = performance.now() / 180;
+        const pulseRadius = 11 + Math.sin(pulseTime) * 4;
+
+        ctx.strokeStyle = 'rgba(255, 182, 193, 0.8)';
+        ctx.lineWidth = 2;
+        ctx.shadowColor = '#ff69b4';
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.arc(px, py, pulseRadius, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Inner solid glowing core
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = '#ffffff';
+        ctx.shadowBlur = 18;
+        ctx.beginPath();
+        ctx.arc(px, py, 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Secondary pink ring
+        ctx.strokeStyle = '#f48fb1';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(px, py, 9, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Coordinate text badge floating near point
+        ctx.shadowBlur = 4;
+        ctx.shadowColor = '#000000';
+        ctx.fillStyle = '#ffb6c1';
+        ctx.font = 'bold 11px ui-monospace, monospace';
+        const labelText = `(${px}, ${py})`;
+        const textY = py > 25 ? py - 14 : py + 22;
+        ctx.fillText(labelText, Math.max(10, Math.min(canvas.width - 60, px - 20)), textY);
+      }
 
       ctx.restore();
     }
@@ -2100,11 +2199,9 @@
         renderStroke(currentStroke);
       }
 
-      if (playbackState === 'PLAYING' || playbackState === 'PAUSED') {
+      if (playbackState === 'PLAYING' || playbackState === 'PAUSED' || playbackState === 'FINISHED') {
         renderPlaybackScanner();
       }
-
-      updateDashboardAndMath();
     }
 
     /* ==========================================================================
@@ -2181,6 +2278,7 @@
       }
 
       redrawCanvas();
+      updateDashboardAndMath();
       updatePlaybackButtons();
     }
 
@@ -2312,6 +2410,7 @@
       redoStack.push(undoneStroke);
       flatPointList = flattenStrokes();
       redrawCanvas();
+      updateDashboardAndMath();
     }
 
     function handleRedo() {
@@ -2320,16 +2419,37 @@
       strokes.push(redoneStroke);
       flatPointList = flattenStrokes();
       redrawCanvas();
+      updateDashboardAndMath();
     }
 
     function handleClear() {
-      if (playbackState === 'PLAYING') stopPlayback();
+      stopPlayback();
       strokes = [];
       redoStack = [];
       currentStroke = [];
       flatPointList = [];
+      playbackAllPoints = [];
+      activePlaybackPoint = null;
+      currentScannerX = null;
+
+      hudPointsEl.textContent = '0';
+      hudDistanceEl.textContent = '0';
+      hudSlopeEl.textContent = '0.00';
+      hudAngleEl.textContent = '0.0';
+      hudSymmetryEl.textContent = '--';
+      strokeCountEl.textContent = '0';
+      pointCountEl.textContent = '0';
+
+      audioNoteVal.textContent = '--';
+      audioFreqVal.textContent = '--';
+      cursorPosTracker.innerHTML = 'Cursor: <span class="coord-value">X: --, Y: --</span>';
+      playbackPointTracker.textContent = '0/0';
+      playbackStatusBadge.textContent = 'READY';
+      playbackStatusBadge.className = 'status-badge';
+
       closeResultModal();
       redrawCanvas();
+      updatePlaybackButtons();
     }
 
     function getMusicalCategory(math) {
@@ -2349,12 +2469,13 @@
       if (strokes.length === 0) return;
       const math = calculateDrawingMathematics();
 
-      cardNotesEl.textContent = (playbackAllPoints.length > 0) ? playbackAllPoints.length : math.totalPoints;
-      cardDistanceEl.textContent = math.totalDistance;
-      cardSlopeEl.textContent = (math.averageSlope > 0 ? '+' : '') + math.averageSlope;
-      cardAngleEl.textContent = math.averageAngle;
-      cardSymmetryEl.textContent = math.symmetryPercent !== null ? math.symmetryPercent : '--';
-      compositionCategoryEl.textContent = getMusicalCategory(math);
+      if (cardPointsEl) cardPointsEl.textContent = math.totalPoints;
+      if (cardNotesEl) cardNotesEl.textContent = (playbackAllPoints.length > 0) ? playbackAllPoints.length : math.totalPoints;
+      if (cardDistanceEl) cardDistanceEl.textContent = math.totalDistance;
+      if (cardSlopeEl) cardSlopeEl.textContent = (math.averageSlope > 0 ? '+' : '') + math.averageSlope;
+      if (cardAngleEl) cardAngleEl.textContent = math.averageAngle;
+      if (cardSymmetryEl) cardSymmetryEl.textContent = math.symmetryPercent !== null ? math.symmetryPercent : '--';
+      if (compositionCategoryEl) compositionCategoryEl.textContent = getMusicalCategory(math);
 
       resultModal.classList.add('active');
     }
@@ -2422,6 +2543,7 @@
     undoBtn.addEventListener('click', handleUndo);
     redoBtn.addEventListener('click', handleRedo);
     clearBtn.addEventListener('click', handleClear);
+    if (bottomClearBtn) bottomClearBtn.addEventListener('click', handleClear);
 
     playBtn.addEventListener('click', startPlayback);
     pauseBtn.addEventListener('click', pausePlayback);
@@ -2429,6 +2551,7 @@
     scoreCardBtn.addEventListener('click', openResultModal);
 
     modalCloseBtn.addEventListener('click', closeResultModal);
+    if (modalCloseActionBtn) modalCloseActionBtn.addEventListener('click', closeResultModal);
     resultModal.addEventListener('click', (e) => {
       if (e.target === resultModal) closeResultModal();
     });
@@ -2436,10 +2559,12 @@
       closeResultModal();
       startPlayback();
     });
-    modalNewBtn.addEventListener('click', () => {
-      closeResultModal();
-      handleClear();
-    });
+    if (modalDrawAgainBtn) {
+      modalDrawAgainBtn.addEventListener('click', () => {
+        closeResultModal();
+        handleClear();
+      });
+    }
 
     window.addEventListener('keydown', (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
@@ -2481,6 +2606,7 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       redrawCanvas();
+      updateDashboardAndMath();
       waveformCtx.fillStyle = '#090d13';
       waveformCtx.fillRect(0, 0, waveformCanvas.width, waveformCanvas.height);
       waveformCtx.strokeStyle = 'rgba(255, 182, 193, 0.3)';
